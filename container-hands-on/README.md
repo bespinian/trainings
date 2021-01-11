@@ -1,4 +1,4 @@
-#Docker Hands-On Session
+# Docker Hands-On Session
 
 ## Run your first container
 
@@ -29,7 +29,7 @@ http://localhost:8080.
 ```sh
 docker run -p 8080:8080 -e APP_TITLE=PARTY \
     -e DB_HOST=tbd:27017 -e APP_VERSION=1337 \
-    awesome-image
+    bespinian/awesome-image
 ```
 
 The `-p` option tells docker to expose a container port on a host port.
@@ -48,15 +48,15 @@ docker rm { container_name | container_id}
 You can find the name and id using `docker ps`.
 
 Now try hosting it on a different port by changing the the input for the
-`-p` option as `-p 8081:8080`.
+`-p` option as `-p 8081:8080` and access it through http://localhost:8081.
 
 # Run a container in the background
 
 To avoid the container blocking your console start it using the "detach"
 option `-d` or `--detach`
 
-Tear your old container down and start a new one adding the `-d` option
-from the start
+Tear your old container down and start a new one with the same command but
+also add the `-d` option.
 
 > Tipp!
 >
@@ -74,7 +74,7 @@ container has printed to the standard output.
 
 > Tipp!
 >
-> Add the `-f` and / or `--tail n` options to follow the
+> Add the `-f` and / or `--tail n` options to to logs command follow the
 > log and or see only the last n rows
 
 # Building container images
@@ -90,7 +90,7 @@ Run `docker build -t awesome-node .`
 
 Docker builds the image according to the instructions within
 the Dockerfile (located in current directory according to the "." period
-sign) and names it 'awesome-image' according to the `-t` option.
+sign) and names it 'awesome-node' according to the `-t` option.
 
 Notice how you never had to install any nodejs runtime or
 tooling. It's all there inside the base image and it's
@@ -113,7 +113,7 @@ http://localhost:8080/random-nr
 # See layers in action
 
 Make a change (e.g. replace the random nr. with something
-actually random: `Math.floor(Math.random()*1000)`) in the
+actually random: `Math.floor(Math.random()*1000)` ) in the
 code and rebuild it.
 
 Notice how the build output will say
@@ -143,31 +143,23 @@ application source code.
 To share local fiels you can mount a local directory (or single file)
 into your container. This is called a host volume.
 
-> TODO: should we use vanilla nginx instead?
+We'll use nginx as static server but want it to serve our local directory.
+By default it just serves a "Welcome to nginx" landing page.
+Download the file `index.html` from the course resources folder
+into your current directory.
 
-We'll use the static server in Bespinians awesome image but want it to
-serve our local directory.
-Download the file `index-tbl.html` from the course resources folder
-into your current directory. (The awesome image expects an `index-tbl.html`
-file.)
-
-Run the awesome-image container again with the directory mounted to the
-html directory of nginx in the container
+Run the nginx container image with the directory mounted to the
+html directory of nginx in the container.
 
 ```sh
-docker run --volume ${PWD}:/tmp/html/ -p 8080:8080 \
-    -e APP_TITLE="No more Party" -e DB_HOST=tbd:1234 \
-    -e APP_VERSION=1338 -d awesome-image
+docker run -d -v ${PWD}:/usr/share/nginx/html \
+    --name vanilla-nginx -p 8080:80 nginx:1.19
 ```
-
-See that the container automatically created an index.html file, where
-it replaced some variables of the index-tbl.html with those given
-through the environment
 
 This can be used to share files or directories with a container,
 allow them to store things persistently, or give more complex
 configurations to a container using config files instead of a
-million env variables.
+countless environment variables.
 
 # Define a named volume
 
@@ -189,14 +181,17 @@ Start a vanilla nginx using the volume.
 
 ```sh
 docker run -d -v html:/usr/share/nginx/html \
-    --name vanilla-nginx -p 8080:80 nginx:latest
+    --name vanilla-nginx -p 8080:80 nginx:1.19
 ```
+
+If you access http://localhost:8080 now, you'll see the default nginx
+welcomepage.
 
 Copy the local index file to the /usr/share/nginx/html/ folder in the
 container where the volume is mapped.
 
 ```sh
-docker cp ./hello-world.html vanilla-nginx:/usr/share/nginx/html/
+docker cp ./index.html vanilla-nginx:/usr/share/nginx/html/
 ```
 
 > Hint!
@@ -211,7 +206,7 @@ containers access the same volume.
 
 ```sh
 docker run -d -v html:/usr/share/nginx/html \
-    --name vanilla-nginx2 -p 8081:80 nginx:latest
+    --name vanilla-nginx2 -p 8081:80 nginx:1.19
 ```
 
 You can now remove both containers and start new ones which will
@@ -223,10 +218,15 @@ In order to get more insight into a running container, we can start
 a shell inside it and connect interactively.
 
 Start a new container from your node application with the `-d` option.
-Connect to your nodejs container in a new terminal.
 
 ```sh
-docker exec -it { container_name | container_id} /bin/bash`
+docker run -p 8080:8080 -d --name my_node_container awesome-node
+```
+
+Start a shell inside your container and connect to it interactively.
+
+```sh
+docker exec -it my_node_container /bin/bash
 ```
 
 Notice that you can now access the file system from the view of
@@ -300,14 +300,14 @@ Start a container with PostgreSQL and assign it to the network.
 
 ```sh
 docker run --network dbnet --name mypostgresdb --restart always \
-    -e POSTGRES_PASSWORD=example -d postgres
+    -e POSTGRES_PASSWORD=example -d postgres:13.1
 ```
 
 Start Adminer (a very simple SQL web frontend) and assign it to the same
 network.
 
 ```sh
-docker run -p 8080:8080 --network dbnet adminer
+docker run -p 8080:8080 -d --network dbnet adminer:4.7
 ```
 
 Access adminer on http://localhost:8080 and have it connect to your
