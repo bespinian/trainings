@@ -113,7 +113,7 @@ http://localhost:8080/random-nr
 # See layers in action
 
 Make a change (e.g. replace the random nr. with something
-actually random: `Math.floor(Math.random()*1000)` ) in the
+actually random: `Math.floor(Math.random()*1000)` in the
 code and rebuild it.
 
 Notice how the build output will say
@@ -140,7 +140,7 @@ application source code.
 
 # Mount a local directory into your container
 
-To share local fiels you can mount a local directory (or single file)
+To share local files you can mount a local directory (or single file)
 into your container. This is called a host volume.
 
 We'll use nginx as static server but want it to serve our local directory.
