@@ -140,7 +140,7 @@ application source code.
 
 # Mount a local directory into your container
 
-To share local fiels you can mount a local directory (or single file)
+To share local files you can mount a local directory (or single file)
 into your container. This is called a host volume.
 
 We'll use nginx as static server but want it to serve our local directory.
