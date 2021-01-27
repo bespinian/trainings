@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-ui-deployment
+  labels:
+    app: notification
+    component: notification-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: notification-ui
+  template:
+    metadata:
+      labels:
+        component: notification-ui
+      annotations:
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+    spec:
+      serviceAccountName: notification-ui-sa
+      containers:
+        - name: notification-ui
+          image: bespinian/notification-ui:1.0.6
+          env:
+            - name: API_URL
+              value: http://notification-api
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 2

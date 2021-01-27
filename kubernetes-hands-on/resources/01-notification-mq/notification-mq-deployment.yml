@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-mq-deployment
+  labels:
+    app: notification
+    component: notification-mq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: notification-mq
+  template:
+    metadata:
+      labels:
+        component: notification-mq
+    spec:
+      serviceAccountName: notification-mq-sa
+      containers:
+        - image: rabbitmq
+          name: rabbitmq
+          ports:
+            - containerPort: 5672
+          readinessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 10
+            periodSeconds: 5

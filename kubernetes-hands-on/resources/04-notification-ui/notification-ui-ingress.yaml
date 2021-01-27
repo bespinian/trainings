@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: notification-ui-ingress
+  labels:
+    app: notification
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    kubernetes.io/ingress.class: addon-http-application-routing
+spec:
+  rules:
+    - host: tbd.9e803564ed854c938bc5.westeurope.aksapp.io
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: notification-ui
+              servicePort: 80

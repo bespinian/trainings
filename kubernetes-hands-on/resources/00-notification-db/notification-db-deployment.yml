@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-db-deployment
+  labels:
+    app: notification
+    component: notification-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: notification-db
+  template:
+    metadata:
+      labels:
+        component: notification-db
+    spec:
+      serviceAccountName: notification-db-sa
+      containers:
+        - image: mongo
+          name: mongo
+          ports:
+            - name: mongo
+              containerPort: 27017
+          volumeMounts:
+            - name: mongo-persistent-storage
+              mountPath: /data/db
+      volumes:
+        - name: mongo-persistent-storage
+          persistentVolumeClaim:
+            claimName: mongo-persistent-storage
