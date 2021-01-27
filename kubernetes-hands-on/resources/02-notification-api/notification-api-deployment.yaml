@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-api-deployment
+  labels:
+    app: notification
+    component: notification-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: notification-api
+  template:
+    metadata:
+      labels:
+        component: notification-api
+      annotations:
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+    spec:
+      serviceAccountName: notification-api-sa
+      containers:
+        - name: notification-api
+          image: bespinian/notification-api:1.0.4
+          imagePullPolicy: Always
+          env:
+            - name: MQ_URL
+              value: amqp://notification-mq
+            - name: DB_URL
+              value: mongodb://notification-db:27017
+          ports:
+            - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 2
+          resources:
+            limits:
+              cpu: 100m
+              memory: 120M
+            requests:
+              cpu: 100m
+              memory: 120M
