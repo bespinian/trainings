@@ -8,6 +8,27 @@ Configure kubectl to target your own namespace by default.
 kubectl config set-context --current --namespace=your-namespace
 ```
 
+## Set up autocomplet in bash
+
+Kubectl supports autocomplete in Linux shells. In order to activate it you need to source the autocomplete files.
+
+It requires the bash-completion package to be installed.
+
+If you're using bash, you can activate it using the following command.
+
+```sh
+source <(kubectl completion bash)
+```
+
+> Note!
+> Kubectl also supports other linux shells.
+> Check the kubectl docs to see which ones and how to activate them.
+
+> Note 2!
+> You can add the line to your .bashrc file or other profile,
+> in order to automatically activate completion whenever
+> a new shell is started.
+
 ## Deploy the basic notification components
 
 The resources subfolder contains all folders and files required for the training.
