@@ -65,6 +65,11 @@ $ kubectl describe service notification-ui
 
 You can enter the IP from `LoadBalancer Ingress` in your browser and pull up the UI.
 
+> Note!
+>
+> Provisioning an external IP might take a few minutes, depending on the
+> setup of your cluster.
+
 > Many production environments have security requirements, that prevent
 > you from exposing your applications directly to the internet using load
 > balancer services.
@@ -183,7 +188,7 @@ or runs out of memory.
 
 ### Change the image
 
-Modify the YAML of the **UI** deployment to use an older image version.
+Modify the YAML of the **UI** deployment to use an newer image version.
 Use the tag `1.0.7` and apply the new config using `kubectl`.
 
 Wait for the new deployment to finish by executing the command.
