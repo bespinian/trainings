@@ -16,8 +16,8 @@ It requires the bash-completion package to be installed.
 
 If you're using bash, you can activate it using the following command.
 
-```sh
-source <(kubectl completion bash)
+```shell
+$ source <(kubectl completion bash)
 ```
 
 > Note!
