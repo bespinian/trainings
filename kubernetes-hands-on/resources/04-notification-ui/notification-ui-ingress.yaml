@@ -9,7 +9,7 @@ metadata:
     kubernetes.io/ingress.class: addon-http-application-routing
 spec:
   rules:
-    - host: tbd.9e803564ed854c938bc5.westeurope.aksapp.io
+    - host: tobi-bespinian.9e803564ed854c938bc5.westeurope.aksapp.io
       http:
         paths:
           - path: /
