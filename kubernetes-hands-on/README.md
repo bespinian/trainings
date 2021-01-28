@@ -5,7 +5,7 @@
 Configure kubectl to target your own namespace by default.
 
 ```sh
-kubectl config set-context $(kubectl config current-context) --namespace=your-namespace
+kubectl config set-context --current --namespace=your-namespace
 ```
 
 ## Deploy the basic notification components
