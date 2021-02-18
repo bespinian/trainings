@@ -95,7 +95,7 @@ Kibana also offers autocomplete to simplify creating queries.
 
 Try to achieve the following:
 
-- Show only logs from the pods tagged `awesome-node` or from the namespace `awesome-node`.
+- Show only logs from the pods labeled `awesome-node` or from the namespace `awesome-node`.
 - Filter out low-information messages such as the healtch check messages.
 - Find out when containers have been restarted in the last 2 hours (in which minute).
 
