@@ -1,0 +1,6 @@
+/home/gabriel/repos/valtech-gcp-spring-boot/spring-boot-example/src/main/java/com/example/restservice/RestServiceApplication.java
+/home/gabriel/repos/valtech-gcp-spring-boot/spring-boot-example/src/main/java/com/example/restservice/Greeting.java
+/home/gabriel/repos/valtech-gcp-spring-boot/spring-boot-example/src/main/java/com/example/restservice/PokemonEntity.java
+/home/gabriel/repos/valtech-gcp-spring-boot/spring-boot-example/src/main/java/com/example/restservice/PokemonRepository.java
+/home/gabriel/repos/valtech-gcp-spring-boot/spring-boot-example/src/main/java/com/example/restservice/GreetingController.java
+/home/gabriel/repos/valtech-gcp-spring-boot/spring-boot-example/src/main/java/com/example/restservice/PokemonController.java
