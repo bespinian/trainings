@@ -1,0 +1,32 @@
+#app.yml file src/main/appengine
+runtime: java11
+env: standard
+service: default
+
+env_variables:
+  SPRING_PROFILES_ACTIVE: "cloud-gcp"
+  SPRING_APPLICATION_JSON: |
+    {
+      "spring": {
+        "datasource": { 
+          "url": "jdbc:mysql://<ip>:3306/<db_name>?updateDatabaseIfNotExist=true&useSSL=false",
+          "username": "<username>",
+          "password": "<password>",
+          "initialization-mode": "always"
+        },
+        "jpa": {
+          "hibernate": {
+            "ddl-auto": "update"
+          },
+          "properties": {
+            "hibernate": {
+              "dialect": "org.hibernate.dialect.MySQL5InnoDBDialect"
+            }
+          }
+        }
+      }
+    }
+
+resources:
+  cpu: 0.5
+  memory_gb: 0.3
