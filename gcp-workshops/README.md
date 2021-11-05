@@ -120,10 +120,10 @@ Our apps should not manage state themselves, and instead store data in managed b
 GCP has various offerings.
 We use Cloud SQL, which has a MySQL compatible API to store and read data in the example app.
 
-Checkout the app at the tag `gcp-cloudsql-basic`.
+Checkout the app at the tag `gcp-app-engine-cloudsql`.
 
 ```sh
-git checkout gcp-cloudsql-basic
+git checkout gcp-app-engine-cloudsql
 ```
 
 If you're familiar with Java, you'll notice that it wants to connect to a MySQL DB using the standard JDBC/MySQL driver.
