@@ -15,7 +15,7 @@ public class GreetingController {
 	@GetMapping("/greeting")
 	public Greeting greeting(@RequestParam(value = "name", defaultValue = "World") String name) {
 		long c = counter.incrementAndGet();
-		String logTemplate = "/greeting called with name: %s, count: %d";
+		String logTemplate = "{\"endpoint\": \"/greeting\", \"name\": \"%s\", \"count\": %d}";
 		System.out.println(String.format(logTemplate, name, c));
 		return new Greeting(c, String.format(template, name));
 	}

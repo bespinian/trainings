@@ -98,10 +98,10 @@ Replace the line with the `logTemplate` variable with the following one:
 String logTemplate = "{\"endpoint\": \"/greeting\", \"name\": \"%s\", \"count\": %d}";
 ```
 
-You may also use the version in the repository at the tag `structured-logging`.
+You may also use the version in the repository at the tag `gcp-app-engine-structured-logging`.
 
 ```sh
-git checkout structured-logging
+git checkout gcp-app-engine-structured-logging
 ```
 
 Redeploy the app, make a few requests and find out how you can now properly filter count ID between 3 and 7 or by the name given in the request.
