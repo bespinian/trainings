@@ -1,6 +1,6 @@
 # Bespinian GCP Workshop - Instructions
 
-These instructions provide rough guidance through deploying the sample application located in the `spring-boot-example` to GCP's App Engine Service.
+These instructions provide rough guidance through deploying the sample application located in the `gcp-workshops/spring-boot-example` to GCP's App Engine Service.
 
 ## Tools
 
@@ -24,7 +24,7 @@ git clone -b gcp-app-engine-basic git@github.com:bespinian/bespinian-gcp-worksho
 git clone -b gcp-app-engine-basic https://github.com/bespinian/bespinian-gcp-workshop.git
 ```
 
-Move to the folder `spring-boot-example` within the repo.
+Move to the folder `gcp-workshops/spring-boot-example` within the repo.
 
 Create an App Engine through the Web Console or the CLI.
 I recommend deploying to the region `europe-west6` which is located in Zürich.
