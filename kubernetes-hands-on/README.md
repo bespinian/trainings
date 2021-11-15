@@ -40,6 +40,7 @@ Use `kubectl apply -f <filename>` on all the files in the folders
 - 00-notification-db
 - 01-notification-mq
 - 02-notification-api
+- 03-notification-mailer
 
 In the folder `04-notification-ui` you'll have to change the ingress configuration
 to have a unique hostname. In order to do so, replace the prefix `tbd` in the hostname
