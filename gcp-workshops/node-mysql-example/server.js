@@ -12,94 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-'use strict';
+"use strict";
 
-const express = require('express');
-const mysql = require('promise-mysql');
-const fs = require('fs');
+const express = require("express");
+const mysql = require("promise-mysql");
+const fs = require("fs");
 
 const app = express();
-app.set('view engine', 'pug');
-app.enable('trust proxy');
+app.set("view engine", "pug");
+app.enable("trust proxy");
 
 // Automatically parse request body as form data.
-app.use(express.urlencoded({extended: false}));
+app.use(express.urlencoded({ extended: false }));
 // This middleware is available in Express v4.16.0 onwards
 app.use(express.json());
 
 // Set Content-Type for all responses for these routes.
 app.use((req, res, next) => {
-  res.set('Content-Type', 'text/html');
+  res.set("Content-Type", "text/html");
   next();
 });
 
 // Create a Winston logger that streams to Stackdriver Logging.
-const winston = require('winston');
-const {LoggingWinston} = require('@google-cloud/logging-winston');
+const winston = require("winston");
+const { LoggingWinston } = require("@google-cloud/logging-winston");
 const loggingWinston = new LoggingWinston();
 const logger = winston.createLogger({
-  level: 'info',
+  level: "info",
   transports: [new winston.transports.Console(), loggingWinston],
 });
 
-// [START cloud_sql_mysql_mysql_create_tcp_sslcerts]
-const createTcpPoolSslCerts = async config => {
-  // Extract host and port from socket address
-  const dbSocketAddr = process.env.DB_HOST.split(':');
-
-  // Establish a connection to the database
-  return mysql.createPool({
-    user: process.env.DB_USER, // e.g. 'my-db-user'
-    password: process.env.DB_PASS, // e.g. 'my-db-password'
-    database: process.env.DB_NAME, // e.g. 'my-database'
-    host: dbSocketAddr[0], // e.g. '127.0.0.1'
-    port: dbSocketAddr[1], // e.g. '3306'
-    ssl: {
-      sslmode: 'verify-full',
-      ca: fs.readFileSync(process.env.DB_ROOT_CERT), // e.g., '/path/to/my/server-ca.pem'
-      key: fs.readFileSync(process.env.DB_KEY), // e.g. '/path/to/my/client-key.pem'
-      cert: fs.readFileSync(process.env.DB_CERT), // e.g. '/path/to/my/client-cert.pem'
-    },
-    // ... Specify additional properties here.
-    ...config,
-  });
-};
-// [END cloud_sql_mysql_mysql_create_tcp_sslcerts]
-
 // [START cloud_sql_mysql_mysql_create_tcp]
-const createTcpPool = async config => {
+const createTcpPool = async (config) => {
   // Extract host and port from socket address
-  const dbSocketAddr = process.env.DB_HOST.split(':');
 
   // Establish a connection to the database
   return mysql.createPool({
     user: process.env.DB_USER, // e.g. 'my-db-user'
     password: process.env.DB_PASS, // e.g. 'my-db-password'
     database: process.env.DB_NAME, // e.g. 'my-database'
-    host: dbSocketAddr[0], // e.g. '127.0.0.1'
-    port: dbSocketAddr[1], // e.g. '3306'
     // ... Specify additional properties here.
     ...config,
   });
 };
 // [END cloud_sql_mysql_mysql_create_tcp]
-
-// [START cloud_sql_mysql_mysql_create_socket]
-const createUnixSocketPool = async config => {
-  const dbSocketPath = process.env.DB_SOCKET_PATH || '/cloudsql';
-
-  // Establish a connection to the database
-  return mysql.createPool({
-    user: process.env.DB_USER, // e.g. 'my-db-user'
-    password: process.env.DB_PASS, // e.g. 'my-db-password'
-    database: process.env.DB_NAME, // e.g. 'my-database'
-    // If connecting via unix domain socket, specify the path
-    socketPath: `${dbSocketPath}/${process.env.CLOUD_SQL_CONNECTION_NAME}`,
-    // Specify additional properties here.
-    ...config,
-  });
-};
-// [END cloud_sql_mysql_mysql_create_socket]
 
 const createPool = async () => {
   const config = {
@@ -130,18 +86,18 @@ const createPool = async () => {
     // connection attempts.
     // [END cloud_sql_mysql_mysql_backoff]
   };
-  if (process.env.DB_HOST) {
-    if (process.env.DB_ROOT_CERT) {
-      return createTcpPoolSslCerts(config);
-    } else {
-      return createTcpPool(config);
-    }
-  } else {
-    return createUnixSocketPool(config);
-  }
+  const dbSocketAddr = process.env.DB_HOST.split(":");
+  const host = dbSocketAddr[0]; // e.g. '127.0.0.1'
+  const port = dbSocketAddr[1]; // e.g. '3306'
+
+  return createTcpPool({
+    ...config,
+    host,
+    port,
+  });
 };
 
-const ensureSchema = async pool => {
+const ensureSchema = async (pool) => {
   // Wait for tables to be created (if they don't already exist).
   await pool.query(
     `CREATE TABLE IF NOT EXISTS votes
@@ -153,11 +109,11 @@ const ensureSchema = async pool => {
 
 const createPoolAndEnsureSchema = async () =>
   await createPool()
-    .then(async pool => {
+    .then(async (pool) => {
       await ensureSchema(pool);
       return pool;
     })
-    .catch(err => {
+    .catch((err) => {
       logger.error(err);
       throw err;
     });
@@ -181,18 +137,18 @@ app.use(async (req, res, next) => {
 });
 
 // Serve the index page, showing vote tallies.
-app.get('/', async (req, res) => {
+app.get("/", async (req, res) => {
   pool = pool || (await createPoolAndEnsureSchema());
   try {
     // Get the 5 most recent votes.
     const recentVotesQuery = pool.query(
-      'SELECT candidate, time_cast FROM votes ORDER BY time_cast DESC LIMIT 5'
+      "SELECT candidate, time_cast FROM votes ORDER BY time_cast DESC LIMIT 5"
     );
 
     // Get votes
-    const stmt = 'SELECT COUNT(vote_id) as count FROM votes WHERE candidate=?';
-    const tabsQuery = pool.query(stmt, ['TABS']);
-    const spacesQuery = pool.query(stmt, ['SPACES']);
+    const stmt = "SELECT COUNT(vote_id) as count FROM votes WHERE candidate=?";
+    const tabsQuery = pool.query(stmt, ["TABS"]);
+    const spacesQuery = pool.query(stmt, ["SPACES"]);
 
     // Run queries concurrently, and wait for them to complete
     // This is faster than await-ing each query object as it is created
@@ -200,7 +156,7 @@ app.get('/', async (req, res) => {
     const [tabsVotes] = await tabsQuery;
     const [spacesVotes] = await spacesQuery;
 
-    res.render('index.pug', {
+    res.render("index.pug", {
       recentVotes,
       tabCount: tabsVotes.count,
       spaceCount: spacesVotes.count,
@@ -210,25 +166,25 @@ app.get('/', async (req, res) => {
     res
       .status(500)
       .send(
-        'Unable to load page. Please check the application logs for more details.'
+        "Unable to load page. Please check the application logs for more details."
       )
       .end();
   }
 });
 
 // Handle incoming vote requests and inserting them into the database.
-app.post('/', async (req, res) => {
-  const {team} = req.body;
+app.post("/", async (req, res) => {
+  const { team } = req.body;
   const timestamp = new Date();
 
-  if (!team || (team !== 'TABS' && team !== 'SPACES')) {
-    return res.status(400).send('Invalid team specified.').end();
+  if (!team || (team !== "TABS" && team !== "SPACES")) {
+    return res.status(400).send("Invalid team specified.").end();
   }
 
   pool = pool || (await createPoolAndEnsureSchema());
   // [START cloud_sql_mysql_mysql_connection]
   try {
-    const stmt = 'INSERT INTO votes (time_cast, candidate) VALUES (?, ?)';
+    const stmt = "INSERT INTO votes (time_cast, candidate) VALUES (?, ?)";
     // Pool.query automatically checks out, uses, and releases a connection
     // back into the pool, ensuring it is always returned successfully.
     await pool.query(stmt, [timestamp, team]);
@@ -240,7 +196,7 @@ app.post('/', async (req, res) => {
     return res
       .status(500)
       .send(
-        'Unable to successfully cast vote! Please check the application logs for more details.'
+        "Unable to successfully cast vote! Please check the application logs for more details."
       )
       .end();
     // [END_EXCLUDE]
@@ -253,10 +209,10 @@ app.post('/', async (req, res) => {
 const PORT = process.env.PORT || 8080;
 const server = app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
-  console.log('Press Ctrl+C to quit.');
+  console.log("Press Ctrl+C to quit.");
 });
 
-process.on('unhandledRejection', err => {
+process.on("unhandledRejection", (err) => {
   console.error(err);
   throw err;
 });

@@ -11,13 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-runtime: nodejs10
+runtime: nodejs16
 
 # The following env variables may contain sensitive information that grants
 # anyone access to your database. Do not add this file to your source control.
 env_variables:
-  DB_USER: MY_DB_USER
-  DB_PASS: MY_DB_PASSWORD
-  DB_NAME: MY_DATABASE
-  # e.g. my-awesome-project:us-central1:my-cloud-sql-instance
-  CLOUD_SQL_CONNECTION_NAME: <MY-PROJECT>:<INSTANCE-REGION>:<MY-DATABASE>
+  DB_HOST: "<private db ip>:3306"
+  DB_USER: "<your user>"
+  DB_PASS: "<your pw>"
+  DB_NAME: "<db name | tabsorspaces>"
+vpc_access_connector:
+  name: projects/<project-id>/locations/europe-west6/connectors/app-engine-to-mysql
