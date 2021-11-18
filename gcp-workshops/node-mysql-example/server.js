@@ -16,7 +16,7 @@
 
 const express = require("express");
 const mysql = require("promise-mysql");
-const fs = require("fs");
+const getSecretLatestVersion = require("./getSecretLatestVersion");
 
 const app = express();
 app.set("view engine", "pug");
@@ -41,21 +41,6 @@ const logger = winston.createLogger({
   level: "info",
   transports: [new winston.transports.Console(), loggingWinston],
 });
-
-// [START cloud_sql_mysql_mysql_create_tcp]
-const createTcpPool = async (config) => {
-  // Extract host and port from socket address
-
-  // Establish a connection to the database
-  return mysql.createPool({
-    user: process.env.DB_USER, // e.g. 'my-db-user'
-    password: process.env.DB_PASS, // e.g. 'my-db-password'
-    database: process.env.DB_NAME, // e.g. 'my-database'
-    // ... Specify additional properties here.
-    ...config,
-  });
-};
-// [END cloud_sql_mysql_mysql_create_tcp]
 
 const createPool = async () => {
   const config = {
@@ -86,15 +71,41 @@ const createPool = async () => {
     // connection attempts.
     // [END cloud_sql_mysql_mysql_backoff]
   };
-  const dbSocketAddr = process.env.DB_HOST.split(":");
-  const host = dbSocketAddr[0]; // e.g. '127.0.0.1'
-  const port = dbSocketAddr[1]; // e.g. '3306'
 
-  return createTcpPool({
-    ...config,
-    host,
-    port,
-  });
+  if (process.env.GCP_PROJECT_NUMBER) {
+    const secretBasePath = `projects/${process.env.GCP_PROJECT_NUMBER}/secrets`;
+
+    const dbHostPromise = getSecretLatestVersion(`${secretBasePath}/db_host`);
+    const dbNamePromise = getSecretLatestVersion(`${secretBasePath}/db_name`);
+    const dbUserPromise = getSecretLatestVersion(`${secretBasePath}/db_user`);
+    const dbPasswordPromise = getSecretLatestVersion(
+      `${secretBasePath}/db_password`
+    );
+
+    const [dbHost, dbName, dbUser, dbPassword] = await Promise.all([
+      dbHostPromise,
+      dbNamePromise,
+      dbUserPromise,
+      dbPasswordPromise,
+    ]);
+
+    const dbSocketAddr = dbHost.split(":");
+    config.host = dbSocketAddr[0];
+    config.port = dbSocketAddr[1];
+
+    config.database = dbName;
+    config.user = dbUser;
+    config.password = dbPassword;
+  } else {
+    const dbSocketAddr = process.env.DB_HOST.split(":");
+    config.host = dbSocketAddr[0];
+    config.port = dbSocketAddr[1];
+
+    config.database = process.env.DB_NAME;
+    config.user = process.env.DB_USER;
+    config.password = process.env.DB_PASS;
+  }
+  return mysql.createPool(config);
 };
 
 const ensureSchema = async (pool) => {
