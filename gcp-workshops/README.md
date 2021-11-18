@@ -114,7 +114,7 @@ Also take a look at the metrics that are out of the box collected in the Operati
 
 We will have a look at this later on.
 
-## Cloud SQL
+## Cloud SQL - Part 1
 
 Our apps should not manage state themselves, and instead store data in managed backing stores.
 GCP has various offerings.
@@ -154,7 +154,7 @@ You'll need to set the IP, the database name, user name and password.
 
 Then deploy the app once again.
 
-### Securely connecting to a database
+### Notes on Securely Connecting to a Database
 
 Google offers better ways to connect to your Cloud SQL database.
 
@@ -180,3 +180,157 @@ Additionally, we may even go through a VPC, which allows us to take our database
 If you're done with deploying and connecting the app through the public IP, try setting up the connection through the VPC.
 Start by looking around the VPC tab in the Web Console.
 Then add a private IP to your Cloud SQL instance and follow the description at https://cloud.google.com/sql/docs/mysql/connect-app-engine-standard#public-ip-default to change the application to use it.
+
+## Cloud SQL - Part 2
+
+In this part we will securely connect to our database.
+This involves
+
+- using a private IP for the database and deleting the public IP
+- enabling an App Engine application to access a VPC
+- use secret manager to store credentials to our database
+
+We're starting from scratch, so you can start with a plain project.
+
+### Creating a VPC
+
+First we create a VPC.
+Chose the "Networking -> VPC network" option on the left hand menu.
+Click "Create VPC Network" at the top.
+Choose a name, select "Automatic" in the "Subnet creation mode" section and leave all other settings as default.
+
+Alternatively, use the following command:
+
+```sh
+gcloud compute networks create <NETWORK-NAME> \
+    --subnet-mode=auto \
+    --bgp-routing-mode=regional \
+    --mtu=1460
+```
+
+[More information on VPC creation](https://cloud.google.com/vpc/docs/using-vpc#creating_networks)
+
+### Creating the MySQL Instance
+
+Create a new MySQL instance in Cloud SQL.
+Make sure it has the following settings, some of which are only available when expanding the "Configuration options":
+
+- Database Version: MySQL 5.7
+- Region: europe-west6
+- Machine Type: Shared Core (saves your free credits)
+- In the "Connections" section disable the "Public IP", enable "Private IP" and select your newly created VPC.
+
+Create your database instance.
+Once this has completed do the following tasks:
+
+- Create a db user and password and note both for later use
+- Create a database called `tabsorspaces`
+
+### Creating the Serverless VPC Access Connector
+
+The VPC Access Connector allows the App Engine app to access resources exposed in our VPC, such as the newly created Cloud SQL instance with its private IP.
+
+To create the Serverless VPC Access Connector
+
+- Go to the "VPC Network" menu and select "Serverless VPC Access"
+- Click "Create Connector"
+- Give it the name `app-engine-to-mysql`
+- Select the `europe-west6` region
+- Select the VPC you've created before and select custom range with the subnet 10.8.0.0/28, which should be available if you've used the default regional subnets.
+
+To find more information, visit: [Configuring Serverless VPC Access](https://cloud.google.com/vpc/docs/configure-serverless-vpc-access#creating_a_connector)
+
+### Deploying the Application
+
+In this example we deploy a very small Node.js application.
+
+- Clone this repository and then checkout the tag `gcp-cloud-sql-vpc`:
+
+  ```sh
+  git checkout gcp-cloud-sql-vpc
+  ```
+
+- You'll find the `node-mysql-example` folder with the application code.
+  Change to the directory:
+
+  ```sh
+  cd node-mysql-example
+  ```
+
+- Within this directory, you'll find the `app.standard.yaml` file.
+  Adjust that file to set the environment variables for the database name, user name and password as well as the private IP and port of your database instance.
+
+  Additionally, set the correct project ID
+
+- Deploy the application by running:
+
+  ```sh
+  gcloud app deploy app.standard.yaml
+  ```
+
+- After the app has been deployed, try to access it and see if you can cast a vote.
+  If it works and the votes get updated, the connection was successful.
+
+> Note
+>
+> We have now established a secure connection to our server and locked it down to anybody accessing it from the internet.
+> Even if a vulnerability in the server is discovered, the risk that it may be exploited on our server is reduced.
+>
+> Compare this to the solution from part 1, where we exposed the instance to the whole internet or had to manage specific IP ranges to secure it somewhat.
+
+#### Extra Task
+
+We cannot connect to the database for development purposes or to inspect the contents of the database for debugging.
+
+Try to set up a Public IP, but instead of adding network ranges, use the Cloud SQL Proxy to connect to the instance from your local machine.
+
+The Cloud SQL Proxy acts as a proxy towards your Cloud SQL instance with a Public IP and requires GCP accounts to setup the connection.
+Your local application or SQL management tool can then access the database on localhost using the SQL native credentials.
+
+Use the following commands to set it up and learn more at the [docs](https://https://cloud.google.com/sql/docs/mysql/connect-admin-proxy).
+
+```sh
+gcloud components install cloud_sql_proxy
+cloud_sql_proxy -instances=<instance-name>=tcp:0.0.0.0:3306
+```
+
+Now you can run the application locally and connect to the same database without exposing it to login attempts from attackers.
+
+### Store the DB Credentials in Secret Manager
+
+In this task we will remove any confidential config from our direct deployment and put them in secret manager instead.
+
+- First, enable the Secret Manager API.
+- Create 4 secrets
+  | Secret Name | Secret Value |
+  | - | - |
+  | db_host | \<your dbs private IP and port 3306\> |
+  | db_name | \<your db name, e.g. tabsorspaces\> |
+  | db_user | \<your db user\> |
+  | db_password | \<the password you set\> |
+  A secret may easily be created through the shell:
+  ```sh
+  echo -n "<secret value>" | gcloud secrets create <secret name> --replication-policy=automatic --data-file=-
+  ```
+- Enable the service account of your app engine app to access the secrets.
+
+  Evaluate the service account of your app using:
+
+  ```sh
+  gcloud app describe
+  ```
+
+  Within "IAM & Admin -> IAM" give it the role "Secret Manager Secret Accessor" on the whole project, or instead, head to secret manager and give it access to each secret individually.
+
+- Checkout the repository at the tag `gcp-cloud-sql-secret-manager`.
+  You may have to discard changes.
+  Especially those made to the `app.standard.yaml`.
+  ```sh
+  git checkout gcp-cloud-sql-secret-manager
+  ```
+- In the `app.standard.yaml` set your project number.
+  This is used to access your secrets.
+- Deploy the app using the following command:
+  ```sh
+  gcloud app deploy app.standard.yaml
+  ```
