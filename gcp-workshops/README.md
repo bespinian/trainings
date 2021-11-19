@@ -330,6 +330,8 @@ In this task we will remove any confidential config from our direct deployment a
   ```
 - In the `app.standard.yaml` set your project number.
   This is used to access your secrets.
+  
+  Also make sure, that the value for the VPC access connector is correct again.
 - Deploy the app using the following command:
   ```sh
   gcloud app deploy app.standard.yaml
