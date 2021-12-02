@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tabsorspaces-sa
+  annotations:
+    iam.gke.io/gcp-service-account: gke-cloudsql-example@<project-id>.iam.gserviceaccount.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tabsorspaces
+  labels:
+    app: tabsorspaces
+spec:
+  replicas: 3
+  template:
+    metadata:
+      name: tabsorspaces
+      labels:
+        app: tabsorspaces
+    spec:
+      containers:
+        - name: tabsorspaces
+          image: europe-west6-docker.pkg.dev/test3-gabriel/bespinian-test/bespinian-cloud-sql-example:1.0.0
+          resources:
+            limits:
+              cpu: 100m
+              memory: 120M
+            requests:
+              cpu: 100m
+              memory: 120M
+          env:
+            - name: "GCP_PROJECT_NUMBER"
+              value: "<GCP-project-number>"
+          ports:
+            - containerPort: 8080
+      serviceAccount: tabsorspaces-sa
+      serviceAccountName: tabsorspaces-sa
+  selector:
+    matchLabels:
+      app: tabsorspaces
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tabsorspaces-svc
+spec:
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  selector:
+    app: tabsorspaces
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tabsorspaces-ingress
+  annotations:
+    # If the class annotation is not specified it defaults to "gce".
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: tabsorspaces-svc
+                port:
+                  number: 80
