@@ -330,9 +330,214 @@ In this task we will remove any confidential config from our direct deployment a
   ```
 - In the `app.standard.yaml` set your project number.
   This is used to access your secrets.
-  
+
   Also make sure, that the value for the VPC access connector is correct again.
+
 - Deploy the app using the following command:
   ```sh
   gcloud app deploy app.standard.yaml
   ```
+
+## Part 3
+
+We recommend starting with a new / empty project for this part, but with some adjustments, it will be possible to use the project from part 2 as well.
+
+### Terraform
+
+- Download and i nstall Terraform for your platform from the [Downloads page](https://www.terraform.io/downloads.html).
+  Alternatively, you may use it in GCP web shell, where it's already installed.
+
+Clone this git repository and check it out at the tag `gcp-sql-terraform`.
+
+- Clone this repository and then checkout at the tag `gcp-sql-terraform`:
+
+  ```sh
+  git checkout gcp-sql-terraform
+  ```
+
+- Switch to the folder `mysql-terraform` and investigate the `main.tf` file.
+
+  ```sh
+  cd mysql-terraform
+  ```
+
+  The `main.tf` file contains Terraform configuration for a MySQL instance in Cloud SQL that is exposed only through an internal IP, which is exposed on the default VPC network of your project.
+  It does not create a database or database user (database user creation would be possible through Terraform).
+
+- Enter your GCP project's id in the provider section of the `main.tf` module.
+
+- Make sure the Cloud SQL API is enabled for your project. [Cloud SQL API Overview](https://console.cloud.google.com/apis/library/sql-component.googleapis.com)
+
+- In the CLI, initialize Terraform to setup the required providers:
+
+  ```sh
+  terraform init
+  ```
+
+- Now apply the terraform configuration to create the MySQL instance
+
+  ```sh
+  terraform apply
+  ```
+
+  It will show you which objects will be created and asks for confirmation.
+
+  Creation of the MySQL server will take about 10 minutes.
+  Meanwhile, you may start working on the GKE setup.
+
+- Once the server has been created, create a database `tabsorspaces` and a database user through the web console or the CLI.
+  Make sure you note user and password.
+
+### Google Kubernetes Engine
+
+In this part we will deploy a GKE cluster, then deploy a simple web app to the cluster and expose it on an HTTP ingress load balancer.
+In the second part we will deploy the node-mysql-example app from part 2 to GKE as well, ensure it has access to secrets via Workload Identity and connect it to the database.
+
+- Make sure the GKE API is enabled: [GKE API Overview](https://console.cloud.google.com/apis/library/container.googleapis.com).
+
+- Deploy a new GKE cluster via the web console.
+  Make sure you chose an Autopilot cluster and make it a private cluster, with access to the control plane through its external IP enabled and the region set to europe-west6.
+
+- Connect to the cluster using kubectl from your local machine or the web shell:
+
+  ```sh
+  gcloud container clusters get-credentials <cluster-name> --region europe-west6 --project <project-name>
+  ```
+
+  This updates your local kubeconfig file with the configuration for the respective cluster.
+
+- Create a new namespace `gcp-ws-day3` and set it as default:
+
+  ```sh
+  kubectl create ns gcp-ws-day3
+
+  kubectl config set-context --current --namespace=gcp-ws-day3
+  ```
+
+#### Awesome Node App
+
+- Now checkout this repository at the tag `gcp-gke-awesome-node`:
+
+  ```sh
+  git checkout gcp-gke-awesome-node
+  ```
+
+- Deploy the awesome-node application using the configuration provided in `awesome-node-k8s.yaml`:
+
+  ```sh
+  kubectl apply -f awesome-node.yml
+  ```
+
+- The deployment shouldn't take too long.
+  You can watch it using the following commands:
+
+  ```sh
+  watch "kubectl get deploy"
+  watch "kubectl get pods"
+  watch "kubectl get ingress"
+  ```
+
+  The ingress will most likely take the longest.
+  It creates an HTTPS load balancer with an external IP.
+  Once it's ready the command below should also show the IP address of the ingress:
+
+  ```sh
+  kubectl get ingress
+  ```
+
+- Make sure to have a look at the GCP web console, and which information is available about your workloads, services, ingresses etc. on there as well.
+
+- Access the application via an HTTP call to the ingress controller.
+  It should return a simple JSON response with a hello-world message.
+
+#### Tabs VS Spaces App
+
+The Tabs VS Spaces app accesses a database.
+Since our GKE cluster is in the default VPC and the database is exposed to this VPC on a private IP, we will not have to do additional networking configuration.
+
+However, to access the database our application is required to use the right credentials and a GCP service account with the permissions to access Cloud SQL.
+To achieve this, we use Workload Identity, which allows assigning Kubernetes service accounts to be mapped to a GCP service account.
+Additionally, we use secret manager again, to store the credentials and configuration for the database.
+
+- Make sure the secret manager API is enabled: [Secret Manager API Overview](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com)
+
+- Create the 4 secrets that are required by the Tabs VS Spaces app to access the db:
+  echo -n "<db-ip>" | gcloud secrets create db_host --replication-policy=automatic --data-file=-
+  echo -n "<db-name>" | gcloud secrets create db_name --replication-policy=automatic --data-file=-
+  echo -n "<db-user>" | gcloud secrets create db_user --replication-policy=automatic --data-file=-
+  echo -n "<db-password>" | gcloud secrets create db_password --replication-policy=automatic --data-file=-
+
+- Now create a GCP service account named `gke-cloudsql-example` via the IAM panel in the GCP web console
+- Create the policy-binding tying the Kubernetes service account `tabsorspaces-sa` in the namespace `gcp-ws-day3` to the newly created `gke-cloudsql-example` GCP service account:
+
+  ```sh
+  gcloud iam service-accounts add-iam-policy-binding gke-cloudsql-example@<project-id>.iam.gserviceaccount.com \
+  --role roles/iam.workloadIdentityUser \
+  --member "serviceAccount:<project-id>.svc.id.goog[gcp-ws-day3/tabsorspaces-sa]"
+  ```
+
+- Now checkout this repository at the tag `gcp-gke-cloud-sql`:
+
+  ```sh
+  git checkout gcp-gke-cloud-sql
+  ```
+
+- In the file `cloud-sql-example-k8s.yaml` configure the service account annotation at the top to include the correct project id.
+  Alternatively, remove the annotation alltogether and execute the following command _after_ you have applied the k8s-configuration.
+
+  ```sh
+  kubectl annotate serviceaccount tabsorspaces-sa \
+    --namespace gcp-ws-day3 \
+    iam.gke.io/gcp-service-account=gke-cloudsql-example@<project-id>.iam.gserviceaccount.com
+  ```
+
+- Also set the GCP project number (not the id) in the environment variable of the pod specifications.
+
+- Deploy the Tabs VS Spaces app:
+
+  ```sh
+  kubectl apply -f cloud-sql-example.yml
+  ```
+
+- Reminder: If you removed the annotations on the service account, you will have to add it now:
+  ```sh
+  kubectl annotate serviceaccount tabsorspaces-sa \
+    --namespace gcp-ws-day3 \
+    iam.gke.io/gcp-service-account=gke-cloudsql-example@<project-id>.iam.gserviceaccount.com
+  ```
+
+### Cloud Functions
+
+We'll deploy a small Cloud Function, that is available via HTTP and outputs a short message about what the current count in the Tabs VS Spaces Poll is.
+
+Since Cloud Functions are not deployed into our VPC, we will have to enable the Serverless VPC access connector.
+
+- Follow the instructions at [Creating the Serverless VPC Access Connector](#creating-the-serverless-vpc-access-connector).
+  You may give the Connector a different name.
+
+- Enable the Cloud Function API: [Cloud Functiosn API Overview](https://console.cloud.google.com/apis/library/cloudfunctions.googleapis.com)
+
+- Checkout this repository at the tag `gcp-cloud-function`:
+
+  ```sh
+  git checkout gcp-cloud-function
+  ```
+
+- Create a function via the Web Console and in the first screen make the following configurations:
+
+  Select the region "europe-west6", set the Trigger to HTTP(S), allow unauthenticated invocations, and make sure it uses the default service account.
+  Also make sure, to set the environment variable `GCP_PROJECT_NUMBER` to your GCP project _number_.
+
+- In the second screen you're asked to input the code.
+  You may copy and paste the code from the three files in the `node-mysql-function` or zip the whole folder and upload it on the UI.
+
+- Make sure you inspect the code, and notice that it does not contain any more code related to path handling via express (although we could still do that in a function if we desire).
+
+- Hit the deploy button, to start building and deployment of the function.
+
+- Once it's deployed, go to the function and select the Permissions tab.
+  On the permissions tab, click "Add" and in the overlay select the principal "allUsers" and give it the role `Cloud Functions Invoker`.
+
+- Now go to the "Triggers" tab.
+  The triggers tab should display the link to the function.
+  Click it to see the current state of the Tabs VS Spaces poll.
