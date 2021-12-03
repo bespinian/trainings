@@ -366,7 +366,11 @@ Clone this git repository and check it out at the tag `gcp-sql-terraform`.
 
 - Enter your GCP project's id in the provider section of the `main.tf` module.
 
-- Make sure the Cloud SQL API is enabled for your project. [Cloud SQL API Overview](https://console.cloud.google.com/apis/library/sql-component.googleapis.com)
+- Make sure the following three APIS are enabled for your project.
+
+  - [Cloud SQL API Overview](https://console.cloud.google.com/apis/library/sql-component.googleapis.com)
+  - [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com)
+  - [Service Networking API](https://console.cloud.google.com/apis/api/servicenetworking.googleapis.com/)
 
 - In the CLI, initialize Terraform to setup the required providers:
 
@@ -425,7 +429,7 @@ In the second part we will deploy the node-mysql-example app from part 2 to GKE 
 - Deploy the awesome-node application using the configuration provided in `awesome-node-k8s.yaml`:
 
   ```sh
-  kubectl apply -f awesome-node.yml
+  kubectl apply -f awesome-node-k8s.yml
   ```
 
 - The deployment shouldn't take too long.
@@ -462,12 +466,17 @@ Additionally, we use secret manager again, to store the credentials and configur
 - Make sure the secret manager API is enabled: [Secret Manager API Overview](https://console.cloud.google.com/apis/library/secretmanager.googleapis.com)
 
 - Create the 4 secrets that are required by the Tabs VS Spaces app to access the db:
+
+  ```sh
   echo -n "<db-ip>" | gcloud secrets create db_host --replication-policy=automatic --data-file=-
   echo -n "<db-name>" | gcloud secrets create db_name --replication-policy=automatic --data-file=-
   echo -n "<db-user>" | gcloud secrets create db_user --replication-policy=automatic --data-file=-
   echo -n "<db-password>" | gcloud secrets create db_password --replication-policy=automatic --data-file=-
+  ```
 
-- Now create a GCP service account named `gke-cloudsql-example` via the IAM panel in the GCP web console
+- Now create a GCP service account named `gke-cloudsql-example` via the IAM panel in the GCP web console.
+  Give it the `Cloud SQL Client` and the `Secret Accessor` permissions.
+
 - Create the policy-binding tying the Kubernetes service account `tabsorspaces-sa` in the namespace `gcp-ws-day3` to the newly created `gke-cloudsql-example` GCP service account:
 
   ```sh
@@ -496,7 +505,7 @@ Additionally, we use secret manager again, to store the credentials and configur
 - Deploy the Tabs VS Spaces app:
 
   ```sh
-  kubectl apply -f cloud-sql-example.yml
+  kubectl apply -f cloud-sql-example-k8s.yml
   ```
 
 - Reminder: If you removed the annotations on the service account, you will have to add it now:
