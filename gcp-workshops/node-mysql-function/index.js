@@ -84,7 +84,8 @@ const createPoolAndEnsureSchema = async () =>
       return pool;
     })
     .catch((err) => {
-      logger.error(err);
+      console.log(err.message);
+      console.log(err.stack);
       throw err;
     });
 
@@ -107,10 +108,11 @@ exports.helloWorld = async (req, res) => {
     const [tabsVotes] = await tabsQuery;
     const [spacesVotes] = await spacesQuery;
 
-    let message = `${tabsVotes.count} votes for tabs and ${spacesVotes.count} votes for spaces}`;
+    let message = `${tabsVotes.count} votes for tabs and ${spacesVotes.count} votes for spaces`;
     res.status(200).send(message);
   } catch (err) {
-    logger.error(err);
+    console.log(err.message);
+    console.log(err.stack);
     res
       .status(500)
       .send(
