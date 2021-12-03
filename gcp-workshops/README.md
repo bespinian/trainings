@@ -475,7 +475,7 @@ Additionally, we use secret manager again, to store the credentials and configur
   ```
 
 - Now create a GCP service account named `gke-cloudsql-example` via the IAM panel in the GCP web console.
-  Give it the `Cloud SQL Client` and the `Secret Accessor` permissions.
+  Give it the `Cloud SQL Client` and the `Secret Manager Secret Accessor` permissions.
 
 - Create the policy-binding tying the Kubernetes service account `tabsorspaces-sa` in the namespace `gcp-ws-day3` to the newly created `gke-cloudsql-example` GCP service account:
 
@@ -524,7 +524,7 @@ Since Cloud Functions are not deployed into our VPC, we will have to enable the 
 - Follow the instructions at [Creating the Serverless VPC Access Connector](#creating-the-serverless-vpc-access-connector).
   You may give the Connector a different name.
 
-- Enable the Cloud Function API: [Cloud Functiosn API Overview](https://console.cloud.google.com/apis/library/cloudfunctions.googleapis.com)
+- Enable the Cloud Function API: [Cloud Functions API Overview](https://console.cloud.google.com/apis/library/cloudfunctions.googleapis.com)
 
 - Checkout this repository at the tag `gcp-cloud-function`:
 
@@ -537,12 +537,16 @@ Since Cloud Functions are not deployed into our VPC, we will have to enable the 
   Select the region "europe-west6", set the Trigger to HTTP(S), allow unauthenticated invocations, and make sure it uses the default service account.
   Also make sure, to set the environment variable `GCP_PROJECT_NUMBER` to your GCP project _number_.
 
+  Make sure to enable the VPC access connector created before in the `Connections` tab of the "Runtime, build, connections and security settings" section and select `Route only requests to private IPs through the VPC connector`.
+
 - In the second screen you're asked to input the code.
   You may copy and paste the code from the three files in the `node-mysql-function` or zip the whole folder and upload it on the UI.
 
 - Make sure you inspect the code, and notice that it does not contain any more code related to path handling via express (although we could still do that in a function if we desire).
 
 - Hit the deploy button, to start building and deployment of the function.
+
+- Also make sure, that in IAM, the service account for app engine has the permissions `Cloud SQL Client` and `Secret Manager Secret Accessor`.
 
 - Once it's deployed, go to the function and select the Permissions tab.
   On the permissions tab, click "Add" and in the overlay select the principal "allUsers" and give it the role `Cloud Functions Invoker`.
