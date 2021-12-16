@@ -554,3 +554,163 @@ Since Cloud Functions are not deployed into our VPC, we will have to enable the 
 - Now go to the "Triggers" tab.
   The triggers tab should display the link to the function.
   Click it to see the current state of the Tabs VS Spaces poll.
+
+### Cloud Build
+
+In this section, we will use Cloud Build to automatically build a container image, whenever a push on a certain GitHub repository happens and deploy it to our GKE cluster.
+
+Prerequisites:
+
+- Have a GKE Cluster ready for deployments, such as the one created in the chapter [Google Kubernetes Engine](#google-kubernetes-engine).
+
+Instructions:
+
+- Fork the Awesome Node Repository on GitHub to your personal account [https://github.com/bespinian/awesome-node](https://github.com/bespinian/awesome-node)
+
+- Enable the Artifact Registry API: [Artifact Registry API Overview](https://console.cloud.google.com/apis/library/artifactregistry.googleapis.com)
+
+- Create an Artifact Repository in the Web Console
+
+- Enable the Cloud Build API: [Cloud Build API Overview](https://console.cloud.google.com/apis/library/cloudbuild.googleapis.com)
+
+- Connect Cloud Build to your GitHub Account and the Repository
+
+  - Head to Cloud Build
+  - Go to "Triggers"
+  - Click "Connect Repository" at the top and follow the process
+
+- In Cloud Build, go to Settings and enable the "Kubernetes Engine Developer" role for the Cloud Build service account
+
+- Create a new Trigger
+
+  - Select your newly created GitHub repository
+  - In Configuration, choose the type "Cloud Build configuration file"
+  - Click create
+
+- Configure the cloudbuild.yaml in your forked repo
+
+  - Set the project id, artifact repository name and cluster name where required
+
+- Push the configured cloudbuild.yaml to your fork
+  - Check in the history on Cloud Build, that the build has been automatically triggered and is running
+  - Have a look at the logs
+  - Once you see in the logs, that step 2 has passed, see that the image has been created in the Artifact Registry on the web console
+  - Wait for the build to finish and the ingress to complete and try to access the app via the ingress
+
+### Cloud Monitoring
+
+Cloud Monitoring deals with metrics, traces, dashboards and alerts.
+We will use it in this Hands-On Session, to inspect certain metrics, create custom metrics from logs, add alerts, and see how we can create a widget on a dashboard.
+
+#### View Metrics in Cloud Monitoring and Create a Dashboard Chart
+
+Gain some familiarity with the Metrics Explorer and charts.
+
+- Go to the Metrics Explorer in Cloud Monitoring
+- Create a chart to display CPU request utilization of your containers from the auto-awesome-node application deployed to GKE.
+  - Find the CPU Request utilization metric, from the Resource Type "Kubernetes Container"
+  - Add a filter, to select only the metrics from containers in the "auto-awesome-node" app namespace.
+    Alternatively, you could also filter by `container_name`, if you only want the metrics from our application container, but in many cases that may yield results from other namespaces as well.
+  - Make yourself familiar with the Aggregator, grouping and alignment period options.
+  - Finally, use the save chart button in the top, to create a new dashboard and save the chart to it.
+- Visit your dashboard and make sure your chart is visible.
+
+#### Create a Log-Based Metric
+
+In this section we create a custom metric based on logs.
+Specifically, we want to know the distribution times with which the `/slow-request` endpoint of our awesome-node application is being called.
+The `/slow-request` endpoint can be called with a query parameter, specifying a timeout.
+The endpoint will wait said time (in seconds), before returning.
+Our metric shall, for each request, contain that parameter.
+
+- Head over to the Log Explorer in the Cloud Monitoring menu
+- First, add a filter to show only requests from the auto-awesome-app.
+  This can be achieved, by filtering based on the `labels.k8s-pod/app` property, for example.
+- Additionally, filter by `requestPath`, which is emitted in the `jsonPayload` properties of the log events.
+- Finally, to ensure, we get only one entry per request, even when one request emits more than one log event, filter by type.
+- The final query string could look like this:
+  ```txt
+  labels."k8s-pod/app"="auto-awesome-node" AND jsonPayload.requestPath="/slow-request" AND jsonPayload.type="postSlowRequest"
+  ```
+- Locate the "Create Metric"-Button and click it
+- Select a Distribution Type Metric, give it a name and specify the unit to be `seconds`
+- In the log explorer, look at the event, to see from which field the time waited could be extracted with a regular expression
+- At the bottom, specify the field to be extracted to be `jsonPayload.message`
+- The following regex, will extract the time waited from that field: `(\d+.\d|\.\d+|\d+)`
+- Make a few dozen requests to the slow-request endpoint with different times
+  ```sh
+  curl http://<your-ingress-ip>/slow-request?request_time=.2
+  curl http://<your-ingress-ip>/slow-request?request_time=2
+  curl http://<your-ingress-ip>/slow-request?request_time=.1
+  ```
+- look for your new metric in the metric explorer and visualize it using a heatmap
+  Hint: reduce the visualization time to the last 2-3 minutes, in which you made the requests.
+
+#### Alerting
+
+We'll create an alert, which notifies us, when our application responds more than 5 times wiht HTTP status 404 within a minute.
+The Load Balancer, which is automatically created for our ingress, automatically emits metrics about HTTP requests to Cloud Monitoring.
+
+To achieve this
+
+- Go to Alerting in the Cloud Monitoring Overview
+- Click "Create Policy"
+- Select the "request count" metric from the load balancer metrics
+- Filter by forwarding rule, to select only the requests intended for our apps
+- Add an additional filter, to select only the requests with response code 404
+- Select a rolling window of 1min and the count function
+- Sum all regions together by selecting sum in the "Across Time Series" section
+- Move to the next screen
+- Configure a threshold, at 5 occurrences
+- Move to the next screen
+- In the "Notification Channels" Dropdown, click "Manage Notification Channels"
+- Add an "Email" notification channel for your email address
+- Back on the Alerting Policy Creation screen, select that newly created channel
+- Save your alert
+- Access the auto-awesome-node application and provoke some `404 Not Found` responses by requesting a non-existing endpoint such as /404
+- It will take a while, so keep generating some 404s every few seconds for a minute or two
+- Finally, your alert should start firing.
+  This should be visible in the Alerting overview, and you should also receive an email.
+
+#### Optional: Create a GKE Standard Cluster to Check out Workload Metrics
+
+Workload Metrics is not yet generally available and not available as a beta feature on Autopilot. You can create a GKE Standard Cluster and deploy the awesome-node app to check it out.
+
+Finally, you will need a PodMonitor custom resource to specify details for the endpoint.
+Find documentation for the PodMonitor [here](https://cloud.google.com/stackdriver/docs/solutions/gke/managing-metrics#configure-workload-metrics)
+
+### IaaS & Networking
+
+To gain some slight familiarity with how easy virtual machines can be created and basic network management tasks, we will create 2 VMs in this section, which lie in different VPC networks and connect the VPC networks via peering, so pinging (or otherwise accessing) each other is possible.
+
+- Creating the first Linux VM
+  - Go to "Compute Engine", select "VM instances" and click "Create Instance"
+  - Select the e2-micro size, the region west-europe6 and choose a zone
+  - Leave all other settings default
+  - it will create a Debian instance (visible in the "Boot Disk" section) in your default VPC and the subnet for the specified region and expose it to the internet through a public IP
+- Connect to it using ssh from your console
+  ```sh
+  gcloud compute ssh --zone "<region>" "<instance-name>" --project "<project-name>"
+  ```
+- Create an additional VPC
+  - Choose a name, such as "custom-vpc"
+  - Click "custom subnet creation"
+  - Give the subnet a name, such as "custom-europe-west6"
+  - Choose europe-west6 as the region and set the IP range to 10.200.0.0/24
+    This IP range, does not conflict with the IP ranges, that are automatically created for a default VPC.
+  - Create a firewall rule that allows ICMP ingress from all internal addresses by setting the protocol to "icmp" and the source filter to 10.0.0.0/8
+- Create a second VM in your new VPC and is not accessible from the internet
+  - Choose e2-micro and west-europe6 again
+  - In the advanced section expand the "Networking" section and select the default network interface
+  - Select your newly created VPC and set "External IP" to "None"
+  - Click create
+  - You'll notice that it won't receive an external IP
+  - Try to ping it from the first VM and notice it's not possible
+- Make a network peering between your custom VPC and the default VPC
+  - Go to VPC network in the Cloud Console and select VPC Network Peering
+  - Click "Create Peering Connection"
+  - Give it the name "default-custom-peering" and select the default VPC
+  - For the "Peered VPC Network" select your project and select the name of your VPC below
+  - Click Create
+  - Add a second peering, but select the custom network first, and the default network second
+- Ping your second VM again from the first one and notice, that it should now work.
