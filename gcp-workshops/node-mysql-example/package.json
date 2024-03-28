@@ -19,7 +19,7 @@
   "dependencies": {
     "@google-cloud/logging-winston": "^4.0.0",
     "@google-cloud/secret-manager": "^3.10.1",
-    "express": "^4.17.3",
+    "express": "^4.19.2",
     "promise-mysql": "^5.0.0",
     "prompt": "^1.0.0",
     "pug": "^3.0.0",
