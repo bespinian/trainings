@@ -79,7 +79,7 @@ const createPool = async () => {
     const dbNamePromise = getSecretLatestVersion(`${secretBasePath}/db_name`);
     const dbUserPromise = getSecretLatestVersion(`${secretBasePath}/db_user`);
     const dbPasswordPromise = getSecretLatestVersion(
-      `${secretBasePath}/db_password`
+      `${secretBasePath}/db_password`,
     );
 
     const [dbHost, dbName, dbUser, dbPassword] = await Promise.all([
@@ -113,7 +113,7 @@ const ensureSchema = async (pool) => {
   await pool.query(
     `CREATE TABLE IF NOT EXISTS votes
       ( vote_id SERIAL NOT NULL, time_cast timestamp NOT NULL,
-      candidate CHAR(6) NOT NULL, PRIMARY KEY (vote_id) );`
+      candidate CHAR(6) NOT NULL, PRIMARY KEY (vote_id) );`,
   );
   console.log("Ensured that table 'votes' exists");
 };
@@ -153,7 +153,7 @@ app.get("/", async (req, res) => {
   try {
     // Get the 5 most recent votes.
     const recentVotesQuery = pool.query(
-      "SELECT candidate, time_cast FROM votes ORDER BY time_cast DESC LIMIT 5"
+      "SELECT candidate, time_cast FROM votes ORDER BY time_cast DESC LIMIT 5",
     );
 
     // Get votes
@@ -177,7 +177,7 @@ app.get("/", async (req, res) => {
     res
       .status(500)
       .send(
-        "Unable to load page. Please check the application logs for more details."
+        "Unable to load page. Please check the application logs for more details.",
       )
       .end();
   }
@@ -207,7 +207,7 @@ app.post("/", async (req, res) => {
     return res
       .status(500)
       .send(
-        "Unable to successfully cast vote! Please check the application logs for more details."
+        "Unable to successfully cast vote! Please check the application logs for more details.",
       )
       .end();
     // [END_EXCLUDE]

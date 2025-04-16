@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-'use strict';
+"use strict";
 
-const path = require('path');
-const request = require('supertest');
-const assert = require('assert');
+const path = require("path");
+const request = require("supertest");
+const assert = require("assert");
 
-const SAMPLE_PATH = path.join(__dirname, '../server.js');
+const SAMPLE_PATH = path.join(__dirname, "../server.js");
 
 const _db_host_backup = process.env.DB_HOST;
 delete process.env.DB_HOST;
@@ -30,22 +30,22 @@ after(() => {
   process.env.DB_HOST = _db_host_backup;
 });
 
-it('should display the default via unix socket', async () => {
+it("should display the default via unix socket", async () => {
   await request(serverUnix)
-    .get('/')
+    .get("/")
     .expect(200)
-    .expect(response => {
-      assert.ok(response.text.includes('Tabs VS Spaces'));
+    .expect((response) => {
+      assert.ok(response.text.includes("Tabs VS Spaces"));
     });
 });
 
-it('should handle insert error via unix', async () => {
-  const expectedResult = 'Invalid team specified';
+it("should handle insert error via unix", async () => {
+  const expectedResult = "Invalid team specified";
 
   await request(serverUnix)
-    .post('/')
+    .post("/")
     .expect(400)
-    .expect(response => {
+    .expect((response) => {
       assert.ok(response.text.includes(expectedResult));
     });
 });

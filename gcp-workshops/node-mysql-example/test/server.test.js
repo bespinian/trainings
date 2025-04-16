@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-'use strict';
+"use strict";
 
-const path = require('path');
-const request = require('supertest');
-const assert = require('assert');
+const path = require("path");
+const request = require("supertest");
+const assert = require("assert");
 
-const SAMPLE_PATH = path.join(__dirname, '../server.js');
+const SAMPLE_PATH = path.join(__dirname, "../server.js");
 
 const server = require(SAMPLE_PATH);
 
@@ -26,22 +26,22 @@ after(() => {
   server.close();
 });
 
-it('should display the default page via tcp', async () => {
+it("should display the default page via tcp", async () => {
   await request(server)
-    .get('/')
+    .get("/")
     .expect(200)
-    .expect(response => {
-      assert.ok(response.text.includes('Tabs VS Spaces'));
+    .expect((response) => {
+      assert.ok(response.text.includes("Tabs VS Spaces"));
     });
 });
 
-it('should handle insert error via tcp', async () => {
-  const expectedResult = 'Invalid team specified';
+it("should handle insert error via tcp", async () => {
+  const expectedResult = "Invalid team specified";
 
   await request(server)
-    .post('/')
+    .post("/")
     .expect(400)
-    .expect(response => {
+    .expect((response) => {
       assert.ok(response.text.includes(expectedResult));
     });
 });

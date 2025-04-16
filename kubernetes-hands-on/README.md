@@ -5,10 +5,10 @@
 Configure kubectl to target your own namespace by default.
 
 ```shell
-$ kubectl config set-context --current --namespace your-namespace
+kubectl config set-context --current --namespace your-namespace
 ```
 
-## Set up autocomplet in bash
+## Set up autocomplete in bash
 
 Kubectl supports autocomplete in Linux shells. In order to activate it you need to source the autocomplete files.
 
@@ -17,15 +17,15 @@ It requires the bash-completion package to be installed.
 If you're using bash, you can activate it using the following command.
 
 ```shell
-$ source <(kubectl completion bash)
+source <(kubectl completion bash)
 ```
 
 > Note!
-> Kubectl also supports other linux shells.
+> Kubectl also supports other Linux shells.
 > Check the kubectl docs to see which ones and how to activate them.
 
 > Note 2!
-> You can add the line to your .bashrc file or other profile,
+> You can add the line to your `.bashrc` file or other profile,
 > in order to automatically activate completion whenever
 > a new shell is started.
 
@@ -61,7 +61,7 @@ To access your application through the IP load balancer find out the IP that
 has been assigned to your load balancer type service for the UI by executing.
 
 ```shell
-$ kubectl describe service notification-ui
+kubectl describe service notification-ui
 ```
 
 You can enter the IP from `LoadBalancer Ingress` in your browser and pull up the UI.
@@ -91,15 +91,15 @@ deployment.
 
 > Note!
 > The deployment resource implicitly leads to the creation of a replica set.
-> The replica set is ultimately what kubernetes looks at to delete
-> or start pods, but it is largely transparent to kubernetes users.
+> The replica set is ultimately what Kubernetes looks at to delete
+> or start pods, but it is largely transparent to Kubernetes users.
 > You can see, that at least one replica set has been created by each of
 > the deployments by running `kubectl get replicaset`.
 
 To create a conflict with the desired state, we can delete a pod through kubectl.
 
 ```shell
-$ kubectl delete pod -l component=notification-ui
+kubectl delete pod -l component=notification-ui
 ```
 
 The command will delete all pods that have been given a label with
@@ -109,7 +109,7 @@ all the deleted pods (in our case just one).
 A new pod should be started almost immediately.
 
 ```shell
-$ kubectl get pods -l component=notification-ui
+kubectl get pods -l component=notification-ui
 ```
 
 The new pod will have a different suffix in its name.
@@ -126,7 +126,7 @@ resource config and applying it making use of the desired state.
 Use a second CLI window and the `watch` command to get continuous updates on your pods:
 
 ```shell
-$ watch 'kubectl get pods'
+watch 'kubectl get pods'
 ```
 
 Use another CLI window to execute the commands in the next chapters.
@@ -137,7 +137,7 @@ The following command tells Kubernetes to scale a specific deployment
 to 3 replicas.
 
 ```shell
-$ kubectl scale deployment notification-api-deployment --replicas 3
+kubectl scale deployment notification-api-deployment --replicas 3
 ```
 
 Watch your second CLI window to see 2 more pods appear.
@@ -148,7 +148,7 @@ The following command will open the applied deployment resource configuration
 in an editor. Within the `spec` node of the file, find the `replicas` property set it's value to `2` and save and exit the file.
 
 ```shell
-$ kubectl edit deployment notification-api-deployment
+kubectl edit deployment notification-api-deployment
 ```
 
 You should see, one pod terminating and finally end up having 2 pods of the API.
@@ -189,13 +189,13 @@ or runs out of memory.
 
 ### Change the image
 
-Modify the YAML of the **UI** deployment to use an newer image version.
+Modify the YAML of the **UI** deployment to use a newer image version.
 Use the tag `1.0.7` and apply the new config using `kubectl`.
 
 Wait for the new deployment to finish by executing the command.
 
 ```shell
-$ kubectl rollout status deployment notification-ui-deployment
+kubectl rollout status deployment notification-ui-deployment
 ```
 
 The command will exit once the deployment has finished.
@@ -207,14 +207,14 @@ visually different.
 Show all revisions of the UI deployment.
 
 ```shell
-$ kubectl rollout history deployment.apps/notification-ui-deployment
+kubectl rollout history deployment.apps/notification-ui-deployment
 ```
 
 Roll back to the previous configuration. Choose the second to last
 revision number.
 
 ```shell
-$ kubectl rollout undo deployment.apps/notification-ui-deployment --to-revision=1
+kubectl rollout undo deployment.apps/notification-ui-deployment --to-revision=1
 ```
 
 ## Autoscaling
@@ -229,19 +229,19 @@ of pods / containers within a deployment and automatically add or remove
 pods to ensure average load stays below a defined target.
 
 The autoscale command is a simple way to get started. The command below
-creates a horizontal pod autoscaler for the notification api deployment
+creates a horizontal pod autoscaler for the notification API deployment
 and configures it to automatically add and remove replicas, so that
 load stays below 50%, with a maximum of 5 replicas.
 
 ```shell
-$ kubectl autoscale deployment notification-api-deployment --cpu-percent=50 --min=1 --max=5
+kubectl autoscale deployment notification-api-deployment --cpu-percent=50 --min=1 --max=5
 ```
 
 Execute the autoscale command and use the command below to start a pod
-to generate load on your api.
+to generate load on your API.
 
 ```shell
-$ kubectl run load-generator --image=busybox --restart=Never \
+kubectl run load-generator --image=busybox --restart=Never \
  -- /bin/sh -c "while sleep 0.002; do wget -q -O- http://notification-api 1>/dev/null; done"
 ```
 
@@ -252,7 +252,7 @@ The following command displays some info on the horizontal pod autoscaler
 every two seconds.
 
 ```shell
-$ watch -n 2 "kubectl get horizontalpodautoscalers.autoscaling notification-api-deployment"
+watch -n 2 "kubectl get horizontalpodautoscalers.autoscaling notification-api-deployment"
 ```
 
 Check the `TARGETS` values. It should quickly increase to over 50%.
@@ -265,23 +265,23 @@ You can also see multiple API pods running now by using `kubectl get pods`.
 Stop generating load by killing the pod.
 
 ```shell
-$ kubectl delete pod load-generator
+kubectl delete pod load-generator
 ```
 
 The load should now decrease and the autoscaler should remove pods.
 
 Since the autoscaler is also configured in desired state, it can also
-be configured through yaml or json. You can have a look at the configured
+be configured through YAML or JSON. You can have a look at the configured
 autoscaler by executing the following command.
 
 ```shell
-$ kubectl get hpa notification-api-deployment -o yaml
+kubectl get hpa notification-api-deployment -o yaml
 ```
 
 Delete the autoscaler now.
 
 ```shell
-$ kubectl delete horizontalpodautoscalers.autoscaling notification-api-deployment
+kubectl delete horizontalpodautoscalers.autoscaling notification-api-deployment
 ```
 
 ## Explore network
@@ -299,7 +299,7 @@ the file `99-debug/curl.yaml` from the resources folder.
 Connect to the curl container interactively.
 
 ```shell
-$ kubectl exec -it curl -- /bin/sh
+kubectl exec -it curl -- /bin/sh
 ```
 
 You can now execute curl commands on a container within the cluster.
@@ -308,7 +308,7 @@ In another CLI window find the specific service name and internal IP of
 the API.
 
 ```shell
-$ kubectl get services
+kubectl get services
 ```
 
 Send HTTP requests from your curl container to it. The response should
